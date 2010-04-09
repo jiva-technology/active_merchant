@@ -9,6 +9,7 @@ module ActiveMerchant #:nodoc:
       SIMULATOR_URL = 'https://test.sagepay.com/Simulator'
       
       APPROVED = 'OK'
+      REGISTERED = 'REGISTERED'
     
       TRANSACTIONS = {
         :purchase => 'PAYMENT',
@@ -16,7 +17,10 @@ module ActiveMerchant #:nodoc:
         :authorization => 'DEFERRED',
         :capture => 'RELEASE',
         :void => 'VOID',
-        :abort => 'ABORT'
+        :abort => 'ABORT',
+        :repeat => 'REPEAT',
+        :authenticate => 'AUTHENTICATE',
+        :authorise => 'AUTHORISE'
       }
       
       CREDIT_CARDS = {
@@ -93,6 +97,38 @@ module ActiveMerchant #:nodoc:
         commit(:authorization, post)
       end
       
+      def authenticate(money, credit_card, options = {})          
+        requires!(options, :order_id)
+        post = {}
+        
+        add_credit_card(post, credit_card)
+        add_address(post, options)
+        add_customer_data(post, options)
+        add_invoice(post, options)
+        add_amount(post, money, options)
+        
+        commit(:authenticate, post)
+      end
+      
+      # Identification is authorization for original payment or authorization. Supply an :order_id option
+      # that is a unique id for this repeat payment (don't just supply the original order id).
+      def repeat(money, identification, options = {})
+        requires!(options, :order_id)
+        post = {}
+        
+        add_invoice(post, options)
+        add_related_reference(post, identification)
+        add_amount(post, money, options)
+        
+        # If we're making the first payment, we AUTHORISE, otherwise we're REPEATING
+        # a PAYMENT or an existing AUTHORISE
+        if identification.split(';').last == 'authenticate'
+          commit(:authorise, post)
+        else
+          commit(:repeat, post)
+        end
+      end
+      
       # You can only capture a transaction once, even if you didn't capture the full amount the first time.
       def capture(money, identification, options = {})
         post = {}
@@ -125,6 +161,7 @@ module ActiveMerchant #:nodoc:
         commit(:credit, post)
       end
       
+      # Completes a 3D Secure transaction
       def three_d_complete(pa_res, md)
         commit(:three_d_complete, 'PARes' => pa_res, 'MD' => md)
       end
@@ -248,7 +285,7 @@ module ActiveMerchant #:nodoc:
       def commit(action, parameters)
         response = parse( ssl_post(url_for(action), post_data(action, parameters)) )
           
-        Response.new(response["Status"] == APPROVED, message_from(response), response,
+        Response.new([APPROVED, REGISTERED].include?(response['Status']), message_from(response), response,
           :test => test?,
           :authorization => authorization_from(response, parameters, action),
           :avs_result => { 
@@ -270,7 +307,15 @@ module ActiveMerchant #:nodoc:
            response["SecurityKey"],
            action ].join(";")
       end
-
+      
+      def add_related_reference(post, identification)
+        order_id, transaction_id, authorization, security_key = identification.split(';')
+        add_pair(post, :RelatedVendorTxCode, order_id)
+        add_pair(post, :RelatedVPSTxId, transaction_id)
+        add_pair(post, :RelatedTxAuthNo, authorization)
+        add_pair(post, :RelatedSecurityKey, security_key)
+      end
+      
       def abort_or_void_from(identification)
         original_transaction = identification.split(';').last
         original_transaction == 'authorization' ? :abort : :void
@@ -284,7 +329,7 @@ module ActiveMerchant #:nodoc:
         if action == :three_d_complete
           endpoint = 'direct3dcallback'
         else
-          endpoint = [ :purchase, :authorization ].include?(action) ? "vspdirect-register" : TRANSACTIONS[action].downcase
+          endpoint = [ :purchase, :authorization, :authenticate ].include?(action) ? "vspdirect-register" : TRANSACTIONS[action].downcase
         end
         "#{test? ? TEST_URL : LIVE_URL}/#{endpoint}.vsp"
       end
@@ -293,13 +338,13 @@ module ActiveMerchant #:nodoc:
         if action == :three_d_complete
           endpoint = 'VSPDirectCallback.asp'
         else
-          endpoint = [ :purchase, :authorization ].include?(action) ? "VSPDirectGateway.asp" : "VSPServerGateway.asp?Service=Vendor#{TRANSACTIONS[action].capitalize}Tx"
+          endpoint = [ :purchase, :authorization, :authenticate ].include?(action) ? "VSPDirectGateway.asp" : "VSPServerGateway.asp?Service=Vendor#{TRANSACTIONS[action].capitalize}Tx"
         end
         "#{SIMULATOR_URL}/#{endpoint}"
       end
 
       def message_from(response)
-        response['Status'] == APPROVED ? 'Success' : (response['StatusDetail'] || 'Unspecified error')    # simonr 20080207 can't actually get non-nil blanks, so this is shorter
+        [APPROVED, REGISTERED].include?(response['Status']) ? 'Success' : (response['StatusDetail'] || 'Unspecified error')    # simonr 20080207 can't actually get non-nil blanks, so this is shorter
       end
 
       def post_data(action, parameters = {})
