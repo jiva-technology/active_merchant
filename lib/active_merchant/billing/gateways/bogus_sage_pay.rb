@@ -4,9 +4,13 @@ module ActiveMerchant #:nodoc:
     class BogusSagePayGateway < Gateway
       AUTHORIZATION = '53433'
       
+      SUCCESSFUL_CARD_NUMBER      = '1111111111111111'
+      EXCEPTION_CARD_NUMBER       = '2222222222222222'
+      THREE_D_SECURE_CARD_NUMBER  = '4444444444444444'
+      
       SUCCESS_MESSAGE = "Bogus Gateway: Forced success"
       FAILURE_MESSAGE = "Bogus Gateway: Forced failure"
-      ERROR_MESSAGE = "Bogus Gateway: Use CreditCard number 1 for success, 2 for exception, 4 for 3D secure and anything else for error"
+      ERROR_MESSAGE = "Bogus Gateway: Use CreditCard number #{SUCCESSFUL_CARD_NUMBER} for success, #{EXCEPTION_CARD_NUMBER} for exception, #{THREE_D_SECURE_CARD_NUMBER} for 3D secure and anything else for error"
       CREDIT_ERROR_MESSAGE = "Bogus Gateway: Use trans_id 1 for success, 2 for exception and anything else for error"
       UNSTORE_ERROR_MESSAGE = "Bogus Gateway: Use trans_id 1 for success, 2 for exception and anything else for error"
       CAPTURE_ERROR_MESSAGE = "Bogus Gateway: Use authorization number 1 for exception, 2 for error and anything else for success"
@@ -33,11 +37,11 @@ module ActiveMerchant #:nodoc:
       
       def authorize(money, creditcard, options = {})
         case creditcard.number
-        when '1'
+        when SUCCESSFUL_CARD_NUMBER
           Response.new(true, SUCCESS_MESSAGE, {:authorized_amount => money.to_s}, :test => true, :authorization => AUTHORIZATION )
-        when '2'
+        when EXCEPTION_CARD_NUMBER
           Response.new(false, FAILURE_MESSAGE, {:authorized_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
-        when '4'
+        when THREE_D_SECURE_CARD_NUMBER
           Response.new(false, THREE_D_SECURE_MESSAGE, {:authorized_amount => money.to_s}, :three_d_secure => true, :pa_req => THREE_D_PA_REQ, :md => THREE_D_MD, :acs_url => THREE_D_ACS_URL, :test => true)
         else
           raise Error, ERROR_MESSAGE
@@ -46,11 +50,11 @@ module ActiveMerchant #:nodoc:
   
       def purchase(money, creditcard, options = {})
         case creditcard.number
-        when '1'
+        when SUCCESSFUL_CARD_NUMBER
           Response.new(true, SUCCESS_MESSAGE, SUCCESS_RESPONSE_PARAMS, :test => true)
-        when '2'
+        when EXCEPTION_CARD_NUMBER
           Response.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE },:test => true)
-        when '4'
+        when THREE_D_SECURE_CARD_NUMBER
           Response.new(false, THREE_D_SECURE_MESSAGE, {:paid_amount => money.to_s}, :three_d_secure => true, :pa_req => THREE_D_PA_REQ, :md => THREE_D_MD, :acs_url => THREE_D_ACS_URL, :test => true)
         else
           raise Error, ERROR_MESSAGE
@@ -100,9 +104,9 @@ module ActiveMerchant #:nodoc:
       
       def store(creditcard, options = {})
         case creditcard.number
-        when '1'
+        when SUCCESSFUL_CARD_NUMBER
           Response.new(true, SUCCESS_MESSAGE, {:billingid => '1'}, :test => true, :authorization => AUTHORIZATION )
-        when '2'
+        when EXCEPTION_CARD_NUMBER
           Response.new(false, FAILURE_MESSAGE, {:billingid => nil, :error => FAILURE_MESSAGE }, :test => true)
         else
           raise Error, ERROR_MESSAGE
