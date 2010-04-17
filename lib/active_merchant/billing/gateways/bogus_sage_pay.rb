@@ -14,6 +14,7 @@ module ActiveMerchant #:nodoc:
       CREDIT_ERROR_MESSAGE = "Bogus Gateway: Use trans_id 1 for success, 2 for exception and anything else for error"
       UNSTORE_ERROR_MESSAGE = "Bogus Gateway: Use trans_id 1 for success, 2 for exception and anything else for error"
       CAPTURE_ERROR_MESSAGE = "Bogus Gateway: Use authorization number 1 for exception, 2 for error and anything else for success"
+      REPEAT_ERROR_MESSAGE = "Bogus Gateway: Use authorization number 1 for exception, 2 for error and anything else for success"
       VOID_ERROR_MESSAGE = "Bogus Gateway: Use authorization number 1 for exception, 2 for error and anything else for success"
       
       THREE_D_SECURE_MESSAGE = "Bogus Gateway: Requires additional 3D secure authentication"
@@ -58,6 +59,17 @@ module ActiveMerchant #:nodoc:
           Response.new(false, THREE_D_SECURE_MESSAGE, {:paid_amount => money.to_s}, :three_d_secure => true, :pa_req => THREE_D_PA_REQ, :md => THREE_D_MD, :acs_url => THREE_D_ACS_URL, :test => true)
         else
           raise Error, ERROR_MESSAGE
+        end
+      end
+      
+      def repeat(money, ident, options = {})
+        case ident
+        when '1'
+          raise Error, REPEAT_ERROR_MESSAGE
+        when '2'
+          Response.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
+        else
+          Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
         end
       end
  
