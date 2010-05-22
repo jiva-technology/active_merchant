@@ -1,3 +1,5 @@
+require File.dirname(__FILE__) + '/paypal/paypal_express_response'
+
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     # Bogus Paypal Express Gateway
