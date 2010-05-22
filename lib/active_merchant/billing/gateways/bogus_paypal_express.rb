@@ -69,6 +69,8 @@ module ActiveMerchant #:nodoc:
           PaypalExpressResponse.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s, :token => '1'}, :test => true)
         when '2.2.2.2'
           PaypalExpressResponse.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
+        when '3.3.3.3' # return a success but set the token value to a failure
+          PaypalExpressResponse.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s, :token => '2'}, :test => true)
         else
           raise Error, ERROR_MESSAGE
         end
