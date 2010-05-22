@@ -17,9 +17,9 @@ module ActiveMerchant #:nodoc:
       def authorize(money, options = {})
         case options[:ip]
         when '1.1.1.1'
-          Response.new(true, SUCCESS_MESSAGE, {:authorized_amount => money.to_s}, :test => true, :authorization => AUTHORIZATION )
+          PaypalExpressResponse.new(true, SUCCESS_MESSAGE, {:authorized_amount => money.to_s}, :test => true, :authorization => AUTHORIZATION )
         when '2.2.2.2'
-          Response.new(false, FAILURE_MESSAGE, {:authorized_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
+          PaypalExpressResponse.new(false, FAILURE_MESSAGE, {:authorized_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
         else
           raise Error, ERROR_MESSAGE
         end      
@@ -28,9 +28,9 @@ module ActiveMerchant #:nodoc:
       def details_for(token)
         case token
         when '1'
-          Response.new(true, SUCCESS_MESSAGE, {:authorized_amount => money.to_s}, :test => true, :authorization => AUTHORIZATION )
+          PaypalExpressResponse.new(true, SUCCESS_MESSAGE, {:authorized_amount => money.to_s}, :test => true, :authorization => AUTHORIZATION )
         when '2'
-          Response.new(false, FAILURE_MESSAGE, {:authorized_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
+          PaypalExpressResponse.new(false, FAILURE_MESSAGE, {:authorized_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
         else
           raise Error, ERROR_MESSAGE
         end
@@ -39,9 +39,9 @@ module ActiveMerchant #:nodoc:
       def purchase(money, options = {})
         case options[:ip]
         when '1.1.1.1'
-          Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
+          PaypalExpressResponse.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
         when '2.2.2.2'
-          Response.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
+          PaypalExpressResponse.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
         else
           raise Error, ERROR_MESSAGE
         end
@@ -50,9 +50,9 @@ module ActiveMerchant #:nodoc:
       def setup_authorization(money, options = {})
         case options[:ip]
         when '1.1.1.1'
-          Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
+          PaypalExpressResponse.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
         when '2.2.2.2'
-          Response.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
+          PaypalExpressResponse.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
         else
           raise Error, ERROR_MESSAGE
         end
@@ -61,9 +61,9 @@ module ActiveMerchant #:nodoc:
       def setup_purchase(money, options = {})
         case options[:ip]
         when '1.1.1.1'
-          Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true, :token => '1')
+          PaypalExpressResponse.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true, :token => '1')
         when '2.2.2.2'
-          Response.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
+          PaypalExpressResponse.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
         else
           raise Error, ERROR_MESSAGE
         end
