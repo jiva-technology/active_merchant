@@ -15,7 +15,7 @@ module ActiveMerchant #:nodoc:
       self.display_name = 'Bogus'
       
       def authorize(money, options = {})
-        case options.ip
+        case options[:ip]
         when '1.1.1.1'
           Response.new(true, SUCCESS_MESSAGE, {:authorized_amount => money.to_s}, :test => true, :authorization => AUTHORIZATION )
         when '2.2.2.2'
@@ -37,7 +37,7 @@ module ActiveMerchant #:nodoc:
       end
   
       def purchase(money, options = {})
-        case options.ip
+        case options[:ip]
         when '1.1.1.1'
           Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
         when '2.2.2.2'
@@ -48,7 +48,7 @@ module ActiveMerchant #:nodoc:
       end
       
       def setup_authorization(money, options = {})
-        case options.ip
+        case options[:ip]
         when '1.1.1.1'
           Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
         when '2.2.2.2'
@@ -59,7 +59,7 @@ module ActiveMerchant #:nodoc:
       end
       
       def setup_purchase(money, options = {})
-        case options.ip
+        case options[:ip]
         when '1.1.1.1'
           Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
         when '2.2.2.2'
