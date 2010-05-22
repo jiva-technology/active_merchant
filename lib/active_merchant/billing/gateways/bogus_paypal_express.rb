@@ -61,7 +61,7 @@ module ActiveMerchant #:nodoc:
       def setup_purchase(money, options = {})
         case options[:ip]
         when '1.1.1.1'
-          Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s}, :test => true)
+          Response.new(true, SUCCESS_MESSAGE, {:paid_amount => money.to_s, :token => '1'}, :test => true)
         when '2.2.2.2'
           Response.new(false, FAILURE_MESSAGE, {:paid_amount => money.to_s, :error => FAILURE_MESSAGE }, :test => true)
         else
