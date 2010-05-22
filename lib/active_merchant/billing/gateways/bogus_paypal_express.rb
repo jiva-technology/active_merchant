@@ -1,9 +1,14 @@
+require File.dirname(__FILE__) + '/paypal/paypal_common_api'
 require File.dirname(__FILE__) + '/paypal/paypal_express_response'
+require File.dirname(__FILE__) + '/paypal_express_common'
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     # Bogus Paypal Express Gateway
     class BogusPaypalExpressGateway < Gateway
+      include PaypalCommonAPI
+      include PaypalExpressCommon
+      
       AUTHORIZATION = '53433'
       
       SUCCESS_MESSAGE = "Bogus Paypal Express Gateway: Forced success"
