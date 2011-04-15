@@ -353,3 +353,7 @@ merchant_esolutions:
   login: "profile_id"
   password: "profile_key"
   
+world_pay:
+  installation_id: change_me
+  login: change_me
+  password: change_me
