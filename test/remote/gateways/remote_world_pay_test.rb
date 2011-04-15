@@ -93,7 +93,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
       :ip             => '86.150.65.37',
       :user_agent     => "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.0.4) Gecko/2008102920 Firefox/3.0.4",
       :session_id     => generate_unique_id,
-      :email          => 'jamie@kernowsoul.com'
+      :email          => 'jamie@test.local'
     }
     
     @error_options = @options.merge({ :order_id => '<>' })
@@ -102,6 +102,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
   def test_successful_purchase
     assert response = @gateway.purchase(@amount, @amex_credit_card, @options)
     assert response.success?
+    assert !response.three_d_secure?
     assert_equal 'AUTHORISED', response.message
   end
   
@@ -127,6 +128,33 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = @gateway.purchase(@amount, @error_credit_card, @options)
     assert !response.success?
     assert_equal 'Gateway error', response.message
+  end
+  
+  def test_successful_three_d_secure_purchase
+    assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
+    assert !response.success?
+    assert response.three_d_secure?
+    assert three_d_response = @gateway.three_d_complete(@amount, @three_d_credit_card, @options.merge({ :pa_res => 'IDENTIFIED', :md => response.md }))
+    assert three_d_response.success?
+    assert_equal 'AUTHORISED', three_d_response.message
+  end
+  
+  def test_not_identified_three_d_secure_purchase
+    assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
+    assert !response.success?
+    assert response.three_d_secure?
+    assert three_d_response = @gateway.three_d_complete(@amount, @three_d_credit_card, @options.merge({ :pa_res => 'NOT_IDENTIFIED', :md => response.md }))
+    assert three_d_response.success?
+    assert_equal 'AUTHORISED', three_d_response.message
+  end
+  
+  def test_unknown_identified_three_d_secure_purchase
+    assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
+    assert !response.success?
+    assert response.three_d_secure?
+    assert three_d_response = @gateway.three_d_complete(@amount, @three_d_credit_card, @options.merge({ :pa_res => 'UNKNOWN_IDENTITY', :md => response.md }))
+    assert !three_d_response.success?
+    assert_equal 'FRAUD SUSPICION', three_d_response.message
   end
   
   def test_gateway_error

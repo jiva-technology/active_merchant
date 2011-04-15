@@ -38,6 +38,13 @@ module ActiveMerchant #:nodoc:
         commit(:purchase, build_purchase_request(money, credit_card, options))
       end
       
+      # Completes a 3D Secure transaction
+      def three_d_complete(money, credit_card, options = {})
+        requires!(options, :order_id)
+        options[:card_type] = map_card_type(credit_card)
+        commit(:three_d_complete, build_purchase_request(money, credit_card, options))
+      end
+      
       private
       def map_card_type(credit_card)
         raise ArgumentError, "The credit card type must be provided" if card_brand(credit_card).blank?
@@ -61,31 +68,12 @@ module ActiveMerchant #:nodoc:
           }
         end
         
-        # Response.new([APPROVED, REGISTERED].include?(response['Status']), message_from(response), response,
-        #   :test => test?,
-        #   :authorization => authorization_from(response, parameters, action),
-        #   :avs_result => { 
-        #     :street_match => AVS_CVV_CODE[ response["AddressResult"] ],
-        #     :postal_match => AVS_CVV_CODE[ response["PostCodeResult"] ],
-        #   },
-        #   :cvv_result => AVS_CVV_CODE[ response["CV2Result"] ],
-        #   :three_d_secure => response["Status"] == '3DAUTH',
-        #   :pa_req => response["PAReq"],
-        #   :md => response["MD"],
-        #   :acs_url => response["ACSURL"]
-        # )
-        
         Response.new(response[:status] == "AUTHORISED", response[:message], response,
-          :test => test?,
-          :avs_result => { 
-            :street_match => '',
-            :postal_match => '',
-          },
-          :cvv_result => '',
-          :three_d_secure => response["Status"] == '3DAUTH',
-          :pa_req => response["PAReq"],
-          :md => response["MD"],
-          :acs_url => response["ACSURL"]
+          :test           => test?,
+          :three_d_secure => response[:status] == '3DAUTH',
+          :pa_req         => response[:pa_req],
+          :md             => response[:md],
+          :acs_url        => response[:acs_url]
         )
       end
       
@@ -101,7 +89,7 @@ module ActiveMerchant #:nodoc:
         orderpath   = "#{basepath}/orderStatus"
         errorpath   = "#{basepath}/error"
         paymentpath = "#{orderpath}/payment"
-        threedpath  = "#{orderpath}/requestInfo/request3DSecure"
+        threedpath  = "#{orderpath}/requestInfo"
         
         response = {}
 
@@ -112,7 +100,8 @@ module ActiveMerchant #:nodoc:
           parse_error(response, root)
         
         # next check for a 3d secure response
-        elsif root = REXML::XPath.first(xml, threedpath)
+        elsif REXML::XPath.first(xml, threedpath)
+          root = REXML::XPath.first(xml, orderpath)
           parse_three_d_response(response, root)
           
         # next check for a normal response
@@ -141,6 +130,24 @@ module ActiveMerchant #:nodoc:
           else
             response[:message] = response[:status]
           end
+        end
+      end
+      
+      def parse_three_d_response(response, root)
+        if node = REXML::XPath.first(root, "requestInfo/request3DSecure")
+          response[:status] = "3DAUTH"
+          if ed = REXML::XPath.first(root, "echoData")
+            response[:md]  = ed.text
+          end
+          if pa = REXML::XPath.first(node, "paRequest")
+            response[:pa_req] = pa.text
+          end
+          if url = REXML::XPath.first(node, "issuerURL")
+            response[:acs_url] = url.text
+          end
+        else
+          response[:status]   = "ERROR"
+          response[:message]  = "Unexpected XML format"
         end
       end
       
@@ -186,6 +193,12 @@ module ActiveMerchant #:nodoc:
                   end
                 end
                 xml.session(:shopperIPAddress => options[:ip], :id => options[:session_id])
+                # 3D secure response
+                if options[:pa_res]
+                  xml.info3DSecure do |info3DSecure|
+                    info3DSecure.paResponse options[:pa_res]
+                  end
+                end
               end
               xml.shopper do |shopper|
                 shopper.shopperEmailAddress options[:email]
@@ -194,6 +207,10 @@ module ActiveMerchant #:nodoc:
                   browser.userAgentHeader options[:user_agent]
                 end
               end
+              
+              # 3D secure echo data
+              xml.echoData options[:md] if options[:md]
+              
             end
           end
         end
@@ -203,4 +220,5 @@ module ActiveMerchant #:nodoc:
   end
 end
 
-ActiveMerchant::Billing::WorldPayGateway.logger = Logger.new(STDOUT)
+# uncomment to turn on debug logging
+# ActiveMerchant::Billing::WorldPayGateway.logger = Logger.new(STDOUT)
