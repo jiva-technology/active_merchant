@@ -52,7 +52,14 @@ module ActiveMerchant #:nodoc:
         headers = { 'Content-Type' => 'text/xml',
 	                  'Authorization' => encoded_credentials }
         
-        response = parse( ssl_post(url, request, headers) )
+        begin
+          response = parse( ssl_post(url, request, headers) )
+        rescue ActiveMerchant::ResponseError => e
+          response = {
+            :status => "ERROR",
+            :message => e.message
+          }
+        end
         
         # Response.new([APPROVED, REGISTERED].include?(response['Status']), message_from(response), response,
         #   :test => test?,
@@ -68,7 +75,7 @@ module ActiveMerchant #:nodoc:
         #   :acs_url => response["ACSURL"]
         # )
         
-        Response.new(true, response, response,
+        Response.new(response[:status] == "AUTHORISED", response[:message], response,
           :test => test?,
           :avs_result => { 
             :street_match => '',
@@ -90,14 +97,28 @@ module ActiveMerchant #:nodoc:
       # Read the XML message from the gateway and check if it was successful,
 			# and also extract required return values from the response.
       def parse(xml)
-        basepath = '/paymentService/reply"'
+        basepath    = "/paymentService/reply"
+        orderpath   = "#{basepath}/orderStatus"
+        errorpath   = "#{basepath}/error"
+        paymentpath = "#{orderpath}/payment"
+        threedpath  = "#{orderpath}/requestInfo/request3DSecure"
+        
         response = {}
 
         xml = REXML::Document.new(xml)
-        if root = REXML::XPath.first(xml, basepath)
-          parse_response(response, root)
-        elsif root = REXML::XPath.first(xml, "//ERROR")
+        
+        # first check for an error
+        if root = REXML::XPath.first(xml, errorpath)
           parse_error(response, root)
+        
+        # next check for a 3d secure response
+        elsif root = REXML::XPath.first(xml, threedpath)
+          parse_three_d_response(response, root)
+          
+        # next check for a normal response
+        elsif root = REXML::XPath.first(xml, orderpath)
+          parse_response(response, root)
+          
         else
           response[:message] = "No valid XML response message received. \
                                 Propably wrong credentials supplied with HTTP header."
@@ -106,29 +127,27 @@ module ActiveMerchant #:nodoc:
         response
       end
       
-      # Parse the <orderStatus> Element which containts all important information
+      # Parse the <payment> Element which containts all important information
       def parse_response(response, root)
-        puts "-------"
-        puts root
-        status = nil
-        # get the root element for this Transaction
-        root.elements.to_a.each do |node|
-          if node.name =~ /FNC_CC_/
-            status = REXML::XPath.first(node, "CC_TRANSACTION/PROCESSING_STATUS")
+        # check for an order error
+        if node = REXML::XPath.first(root, "error")
+          parse_error(response, node)
+          
+        # parse a normal response
+        elsif node = REXML::XPath.first(root, "payment")
+          response[:status] = REXML::XPath.first(node, "lastEvent").text
+          if node = REXML::XPath.first(node, "ISO8583ReturnCode")
+            response[:message] = node.attributes['description']
+          else
+            response[:message] = response[:status]
           end
         end
-        message = ""
-        if status
-          if info = status.elements['Info']
-            message << info.text
-          end
-          # Get basic response information
-          status.elements.to_a.each do |node|
-            response[node.name.to_sym] = (node.text || '').strip
-          end
-        end
-        # parse_error(root, message)
-        response[:message] = message
+      end
+      
+      def parse_error(response, root)
+        response[:status]     = "ERROR"
+        response[:error_code] = root.attributes['code']
+        response[:message]    = root.text
       end
       
       def build_purchase_request(money, credit_card, options={})

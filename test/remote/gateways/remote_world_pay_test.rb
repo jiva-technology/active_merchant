@@ -4,17 +4,76 @@ class RemoteWorldPayTest < Test::Unit::TestCase
   
 
   def setup
-    @gateway = WorldPayGateway.new(fixtures(:world_pay))
-    
-    @amount = 100
+    @gateway  = WorldPayGateway.new(fixtures(:world_pay))
+    @amount   = 100
 
-    @threed_credit_card = CreditCard.new(
+    @amex_credit_card = CreditCard.new(
+      :number               => '370000200000000',
+      :month                => 6,
+      :year                 => next_year,
+      :verification_value   => 123,
+      :first_name           => 'Sam',
+      :last_name            => 'Smith',
+      :type                 => 'american_express'
+    )
+    
+    @refused_credit_card = CreditCard.new(
+      :number               => '370000200000000',
+      :month                => 6,
+      :year                 => next_year,
+      :verification_value   => 123,
+      :first_name           => 'REFUSED',
+      :last_name            => '',
+      :type                 => 'american_express'
+    )
+    
+    @referred_credit_card = CreditCard.new(
+      :number               => '370000200000000',
+      :month                => 6,
+      :year                 => next_year,
+      :verification_value   => 123,
+      :first_name           => 'REFERRED',
+      :last_name            => '',
+      :type                 => 'american_express'
+    )
+    
+    @fraud_credit_card = CreditCard.new(
+      :number               => '370000200000000',
+      :month                => 6,
+      :year                 => next_year,
+      :verification_value   => 123,
+      :first_name           => 'FRAUD',
+      :last_name            => '',
+      :type                 => 'american_express'
+    )
+    
+    @error_credit_card = CreditCard.new(
+      :number               => '370000200000000',
+      :month                => 6,
+      :year                 => next_year,
+      :verification_value   => 123,
+      :first_name           => 'ERROR',
+      :last_name            => '',
+      :type                 => 'american_express'
+    )
+
+    @three_d_credit_card = CreditCard.new(
       :number               => '4484070000000000',
       :month                => 6,
       :year                 => next_year,
       :verification_value   => 123,
       :first_name           => '3D',
       :last_name            => '',
+      :type                 => 'visa'
+    )
+    
+    @invalid_credit_card = CreditCard.new(
+      :number               => '4484070000000000',
+      :month                => 6,
+      :year                 => 1940,
+      :verification_value   => 123,
+      :first_name           => 'Sam',
+      :last_name            => 'Smith',
       :type                 => 'visa'
     )
     
@@ -37,33 +96,54 @@ class RemoteWorldPayTest < Test::Unit::TestCase
       :email          => 'jamie@kernowsoul.com'
     }
     
-    # @declined_options[:billing_address][:name]  = "REFUSED"
-    # @referred_options[:billing_address][:name]  = "REFERRED"
-    # @fraud_options[:billing_address][:name]     = "FRAUD"
-    # @error_options[:billing_address][:name]     = "ERROR"
+    @error_options = @options.merge({ :order_id => '<>' })
   end
   
   def test_successful_purchase
-    assert response = @gateway.purchase(@amount, @threed_credit_card, @options)
+    assert response = @gateway.purchase(@amount, @amex_credit_card, @options)
     assert response.success?
-    assert_equal 'REPLACE WITH SUCCESS MESSAGE', response.message
+    assert_equal 'AUTHORISED', response.message
   end
-
-  # def test_unsuccessful_purchase
-  #   assert response = @gateway.purchase(@amount, @credit_card, @options)
-  #   assert_failure response
-  #   assert_equal 'REPLACE WITH FAILED PURCHASE MESSAGE', response.message
-  # end
-  # 
-  # def test_invalid_login
-  #   gateway = WorldPayGateway.new(
-  #               :login => '',
-  #               :password => ''
-  #             )
-  #   assert response = gateway.purchase(@amount, @credit_card, @options)
-  #   assert_failure response
-  #   assert_equal 'REPLACE WITH FAILURE MESSAGE', response.message
-  # end
+  
+  def test_refused_purchase
+    assert response = @gateway.purchase(@amount, @refused_credit_card, @options)
+    assert !response.success?
+    assert_equal 'REFUSED', response.message
+  end
+  
+  def test_refferred_purchase
+    assert response = @gateway.purchase(@amount, @referred_credit_card, @options)
+    assert !response.success?
+    assert_equal 'REFERRED', response.message
+  end
+  
+  def test_fraud_purchase
+    assert response = @gateway.purchase(@amount, @fraud_credit_card, @options)
+    assert !response.success?
+    assert_equal 'FRAUD SUSPICION', response.message
+  end
+  
+  def test_error_purchase
+    assert response = @gateway.purchase(@amount, @error_credit_card, @options)
+    assert !response.success?
+    assert_equal 'Gateway error', response.message
+  end
+  
+  def test_gateway_error
+    assert response = @gateway.purchase(@amount, @invalid_credit_card, @error_options)
+    assert !response.success?
+    assert_equal 'OrderCode contains illegal characters or is longer than 64 characters', response.message
+  end
+  
+  def test_invalid_login
+    gateway = WorldPayGateway.new(fixtures(:world_pay).merge(
+      :login => '',
+      :password => ''
+    ))
+    assert response = gateway.purchase(@amount, @amex_credit_card, @options)
+    assert !response.success?
+    assert_equal 'Failed with 401 Authorization Required', response.message
+  end
   
   private
 
