@@ -21,6 +21,7 @@ module ActiveMerchant #:nodoc:
       # self.supports_3d_secure   = true
       self.homepage_url         = 'http://www.worldpay.com'
       self.display_name         = 'WorldPay'
+      self.supports_3d_secure   = true
 
       def initialize(options = {})
         requires!(options, :login, :password, :installation_id)
