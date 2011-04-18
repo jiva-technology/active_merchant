@@ -15,7 +15,7 @@ module ActiveMerchant #:nodoc:
         :jcb              => "JCB-SSL"
       }
     
-      self.supported_cardtypes  = [:visa, :master, :american_express, :discover, :jcb, :switch, :solo, :maestro, :diners_club]
+      self.supported_cardtypes  = [:visa, :master, :maestro, :solo, :american_express, :jcb, :diners_club]
       self.supported_countries  = ['GB']
       self.default_currency     = 'GBP'
       # self.supports_3d_secure   = true
