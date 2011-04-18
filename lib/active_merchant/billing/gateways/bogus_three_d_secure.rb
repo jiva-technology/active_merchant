@@ -1,7 +1,7 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
-    # Bogus Gateway
-    class BogusSagePayGateway < Gateway
+    # Bogus 3D Secure Gateway
+    class BogusThreeDSecureGateway < Gateway
       AUTHORIZATION = '53433'
       
       SUCCESSFUL_CARD_NUMBER      = '1111111111111111'
