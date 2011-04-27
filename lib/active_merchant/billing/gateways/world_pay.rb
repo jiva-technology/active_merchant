@@ -159,6 +159,7 @@ module ActiveMerchant #:nodoc:
       end
       
       def build_purchase_request(money, credit_card, options={})
+        requires!(options, :card_type, :order_id)
         
         billing_address   = options[:billing_address] || options[:address]
         shipping_address  = options[:shipping_address]
