@@ -134,7 +134,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
     assert !response.success?
     assert response.three_d_secure?
-    assert three_d_response = @gateway.three_d_complete(@amount, @three_d_credit_card, @options.merge({ :pa_res => 'IDENTIFIED', :md => response.md }))
+    assert three_d_response = @gateway.three_d_complete('IDENTIFIED', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card}))
     assert three_d_response.success?
     assert_equal 'AUTHORISED', three_d_response.message
   end
@@ -143,7 +143,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
     assert !response.success?
     assert response.three_d_secure?
-    assert three_d_response = @gateway.three_d_complete(@amount, @three_d_credit_card, @options.merge({ :pa_res => 'NOT_IDENTIFIED', :md => response.md }))
+    assert three_d_response = @gateway.three_d_complete('NOT_IDENTIFIED', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card}))
     assert three_d_response.success?
     assert_equal 'AUTHORISED', three_d_response.message
   end
@@ -152,7 +152,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
     assert !response.success?
     assert response.three_d_secure?
-    assert three_d_response = @gateway.three_d_complete(@amount, @three_d_credit_card, @options.merge({ :pa_res => 'UNKNOWN_IDENTITY', :md => response.md }))
+    assert three_d_response = @gateway.three_d_complete('UNKNOWN_IDENTITY', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card}))
     assert !three_d_response.success?
     assert_equal 'FRAUD SUSPICION', three_d_response.message
   end

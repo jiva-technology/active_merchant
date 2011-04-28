@@ -73,7 +73,7 @@ module ActiveMerchant #:nodoc:
         end
       end
  
-      def three_d_complete(pa_res, md)
+      def three_d_complete(pa_res, md, options={})
         if pa_res == THREE_D_PA_RES && md == THREE_D_MD
           Response.new(true, SUCCESS_MESSAGE, SUCCESS_RESPONSE_PARAMS, :test => true, :authorization => AUTHORIZATION)
         else

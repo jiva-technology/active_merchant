@@ -55,7 +55,9 @@ class WorldPayTest < Test::Unit::TestCase
   
   def test_three_d_complete
     @gateway.stubs(:ssl_post).returns(successful_purchase_response)
-    response = @gateway.three_d_complete(100, @credit_card, @options)
+    @options[:money]      = 100
+    @options[:credit_card] = @credit_card
+    response = @gateway.three_d_complete('paRes', 'md', @options)
     assert response.success?
   end
 

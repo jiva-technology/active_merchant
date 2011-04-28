@@ -40,10 +40,13 @@ module ActiveMerchant #:nodoc:
       end
       
       # Completes a 3D Secure transaction
-      def three_d_complete(money, credit_card, options = {})
-        requires!(options, :order_id)
-        options[:card_type] = map_card_type(credit_card)
-        commit(:three_d_complete, build_purchase_request(money, credit_card, options))
+      # def three_d_complete(money, credit_card, options = {})
+      def three_d_complete(pa_res, md, options={})
+        requires!(options, :order_id, :money, :credit_card)
+        options[:card_type] = map_card_type(options[:credit_card])
+        options[:pa_res]    = pa_res
+        options[:md]        = md
+        commit(:three_d_complete, build_purchase_request(options[:money], options[:credit_card], options))
       end
       
       private
@@ -173,7 +176,7 @@ module ActiveMerchant #:nodoc:
             xml.order(:orderCode => options[:order_id], :installationId => @options[:installation_id]) do |order|
               order.description options[:description]
               order.amount(:value => money, :currencyCode => default_currency, :exponent => "2")
-              order.orderContent { |t| t.cdata! options[:invoice] }
+              order.orderContent { |t| t.cdata! options[:invoice] } unless options[:invoice].blank?
               xml.paymentDetails do
                 xml.tag!(options[:card_type]) do |card|
                   card.cardNumber credit_card.number
@@ -181,16 +184,18 @@ module ActiveMerchant #:nodoc:
                     xml.date(:month => credit_card.month, :year => credit_card.year)
                   end
                   card.cardHolderName [credit_card.first_name, credit_card.last_name].delete_if {|x| x.blank? }.join(' ')
-                  card.cvc credit_card.verification_value
-                  card.cardAddress do
-                    xml.address do |address|
-                      address.firstName       billing_address[:first_name]
-                      address.lastName        billing_address[:last_name]
-                      address.street          billing_address[:address1]
-                      address.postalCode      billing_address[:zip]
-                      address.city            billing_address[:city]
-                      address.countryCode     billing_address[:country]
-                      address.telephoneNumber billing_address[:phone]
+                  card.cvc credit_card.verification_value unless credit_card.verification_value.blank?
+                  if billing_address
+                    card.cardAddress do
+                      xml.address do |address|
+                        address.firstName       billing_address[:first_name]
+                        address.lastName        billing_address[:last_name]
+                        address.street          billing_address[:address1]
+                        address.postalCode      billing_address[:zip]
+                        address.city            billing_address[:city]
+                        address.countryCode     billing_address[:country]
+                        address.telephoneNumber billing_address[:phone]
+                      end
                     end
                   end
                 end
@@ -203,7 +208,7 @@ module ActiveMerchant #:nodoc:
                 end
               end
               xml.shopper do |shopper|
-                shopper.shopperEmailAddress options[:email]
+                shopper.shopperEmailAddress options[:email] unless options[:email].blank?
                 shopper.browser do |browser|
                   browser.acceptHeader "text/html"
                   browser.userAgentHeader options[:user_agent]
