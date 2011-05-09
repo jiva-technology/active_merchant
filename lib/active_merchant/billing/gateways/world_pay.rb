@@ -42,11 +42,11 @@ module ActiveMerchant #:nodoc:
       # Completes a 3D Secure transaction
       # def three_d_complete(money, credit_card, options = {})
       def three_d_complete(pa_res, md, options={})
-        requires!(options, :order_id, :money, :credit_card)
+        requires!(options, :order_id, :money, :credit_card, :cookie)
         options[:card_type] = map_card_type(options[:credit_card])
         options[:pa_res]    = pa_res
         options[:md]        = md
-        commit(:three_d_complete, build_purchase_request(options[:money], options[:credit_card], options))
+        commit(:three_d_complete, build_purchase_request(options[:money], options[:credit_card], options), options)
       end
       
       private
@@ -57,11 +57,14 @@ module ActiveMerchant #:nodoc:
         CREDIT_CARDS[card_type]
       end
       
-      def commit(action, request)
+      def commit(action, request, options={})
         url = test? ? TEST_URL : LIVE_URL
         
-        headers = { 'Content-Type' => 'text/xml',
+        headers = { 'Content-Type'  => 'text/xml',
 	                  'Authorization' => encoded_credentials }
+	      
+        # add the cookie header if it's been passed in
+	      headers['Cookie'] = options[:cookie] if options.has_key? :cookie
         
         begin
           response = parse( ssl_post(url, request, headers) )
@@ -96,6 +99,8 @@ module ActiveMerchant #:nodoc:
         threedpath  = "#{orderpath}/requestInfo"
         
         response = {}
+        
+        parse_session_cookie(xml, response)
 
         xml = REXML::Document.new(xml)
         
@@ -118,6 +123,17 @@ module ActiveMerchant #:nodoc:
         end
 
         response
+      end
+      
+      def parse_session_cookie(obj, response)
+        if obj.respond_to? :each_header
+          obj.each_header do |k,v|
+            if k =~ /set-cookie/i
+              cookie = v.split(';')[0]
+              response[:cookie] = cookie
+            end
+          end
+        end
       end
       
       # Parse the <payment> Element which containts all important information
@@ -229,3 +245,38 @@ end
 
 # uncomment to turn on debug logging
 # ActiveMerchant::Billing::WorldPayGateway.logger = Logger.new(STDOUT)
+
+
+# create a worldpay response object that acts like a string but has the each_header method
+# so that we can access the headers that worldpay returns
+
+class WorldPayResponse < String
+  
+  def initialize(resp)
+    @resp = resp
+    super(resp.body)
+  end
+  
+  def each_header(&block)
+    @resp.each_header &block
+  end
+  
+end
+
+# overwrite the handle_response method so that it returns a WorldPayResponse object rather
+# than the response.body string, this acts the same as a string but includes the each_header
+# method for accessing the returned headers
+
+module ActiveMerchant
+  class Connection
+    private
+    def handle_response(response)
+      case response.code.to_i
+      when 200...300
+        WorldPayResponse.new(response)
+      else
+        raise ResponseError.new(response)
+      end
+    end
+  end
+end

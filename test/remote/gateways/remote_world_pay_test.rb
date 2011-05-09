@@ -134,7 +134,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
     assert !response.success?
     assert response.three_d_secure?
-    assert three_d_response = @gateway.three_d_complete('IDENTIFIED', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card}))
+    assert three_d_response = @gateway.three_d_complete('IDENTIFIED', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card, :cookie => 'machine=0bf62027' }))
     assert three_d_response.success?
     assert_equal 'AUTHORISED', three_d_response.message
   end
@@ -143,7 +143,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
     assert !response.success?
     assert response.three_d_secure?
-    assert three_d_response = @gateway.three_d_complete('NOT_IDENTIFIED', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card}))
+    assert three_d_response = @gateway.three_d_complete('NOT_IDENTIFIED', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card, :cookie => 'machine=0bf62027' }))
     assert three_d_response.success?
     assert_equal 'AUTHORISED', three_d_response.message
   end
@@ -152,7 +152,7 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = @gateway.purchase(@amount, @three_d_credit_card, @options)
     assert !response.success?
     assert response.three_d_secure?
-    assert three_d_response = @gateway.three_d_complete('UNKNOWN_IDENTITY', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card}))
+    assert three_d_response = @gateway.three_d_complete('UNKNOWN_IDENTITY', response.md, @options.merge({ :money => @amount, :credit_card => @three_d_credit_card, :cookie => 'machine=0bf62027' }))
     assert !three_d_response.success?
     assert_equal 'FRAUD SUSPICION', three_d_response.message
   end
@@ -171,6 +171,13 @@ class RemoteWorldPayTest < Test::Unit::TestCase
     assert response = gateway.purchase(@amount, @amex_credit_card, @options)
     assert !response.success?
     assert_equal 'Failed with 401 Authorization Required', response.message
+  end
+  
+  def test_getting_cookie
+    assert response = @gateway.purchase(@amount, @amex_credit_card, @options)
+    assert response.success?
+    assert !response.three_d_secure?
+    assert_equal 'machine=0bf62027', response.params['cookie']
   end
   
   private
