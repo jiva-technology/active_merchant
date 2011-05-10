@@ -246,28 +246,27 @@ end
 # uncomment to turn on debug logging
 # ActiveMerchant::Billing::WorldPayGateway.logger = Logger.new(STDOUT)
 
-
-# create a worldpay response object that acts like a string but has the each_header method
-# so that we can access the headers that worldpay returns
-
-class WorldPayResponse < String
-  
-  def initialize(resp)
-    @resp = resp
-    super(resp.body)
-  end
-  
-  def each_header(&block)
-    @resp.each_header &block
-  end
-  
-end
-
-# overwrite the handle_response method so that it returns a WorldPayResponse object rather
-# than the response.body string, this acts the same as a string but includes the each_header
-# method for accessing the returned headers
-
 module ActiveMerchant
+  
+  # create a worldpay response object that acts like a string but has the each_header method
+  # so that we can access the headers that worldpay returns
+
+  class WorldPayResponse < String
+
+    def initialize(resp)
+      @resp = resp
+      super(resp.body)
+    end
+
+    def each_header(&block)
+      @resp.each_header &block
+    end
+
+  end
+  
+  # overwrite the handle_response method so that it returns a WorldPayResponse object rather
+  # than the response.body string, this acts the same as a string but includes the each_header
+  # method for accessing the returned headers
   class Connection
     private
     def handle_response(response)
