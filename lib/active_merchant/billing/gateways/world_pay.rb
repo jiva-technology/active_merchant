@@ -187,7 +187,7 @@ module ActiveMerchant #:nodoc:
         xml.instruct!(:xml, :version => '1.0')
         xml.declare!(:DOCTYPE, :paymentService, :PUBLIC, "-//WorldPay/DTD WorldPay PaymentService v1//EN", "http://dtd.wp3.rbsworldpay.com/paymentService_v1.dtd")
         
-        xml.paymentService(:version => "1.4") do
+        xml.paymentService(:version => "1.4", :merchantCode => @options[:login]) do
           xml.submit do
             xml.order(:orderCode => options[:order_id], :installationId => @options[:installation_id]) do |order|
               order.description options[:description]
