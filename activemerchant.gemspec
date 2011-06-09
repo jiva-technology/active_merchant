@@ -13,8 +13,6 @@ Gem::Specification.new do |s|
   s.files = Dir['CHANGELOG', 'README.rdoc', 'MIT-LICENSE', 'CONTRIBUTORS', 'gem-public_cert.pem', 'lib/**/*']
   s.require_path = 'lib'
   
-  s.has_rdoc = true
-  
   s.add_dependency('activesupport', '>= 2.3.2')
   s.add_dependency('builder', '>= 2.0.0')
   
