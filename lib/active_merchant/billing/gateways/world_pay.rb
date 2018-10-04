@@ -2,8 +2,8 @@ module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class WorldPayGateway < Gateway  
       
-      TEST_URL = 'https://secure-test.wp3.rbsworldpay.com/jsp/merchant/xml/paymentService.jsp'
-      LIVE_URL = 'https://secure.wp3.rbsworldpay.com/jsp/merchant/xml/paymentService.jsp'
+      TEST_URL = 'https://secure-test.worldpay.com/jsp/merchant/xml/paymentService.jsp'
+      LIVE_URL = 'https://secure.worldpay.com/jsp/merchant/xml/paymentService.jsp'
       
       CREDIT_CARDS = {
         :visa             => "VISA-SSL",
